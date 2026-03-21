@@ -314,6 +314,7 @@ export default function RestaurantCafeChatbotDemo() {
 
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const [showReservationForm, setShowReservationForm] = useState(false);
   const [reservation, setReservation] = useState<ReservationForm>({
     date: "",
@@ -349,18 +350,35 @@ export default function RestaurantCafeChatbotDemo() {
     ]);
   };
 
-  const onSend = () => {
+  const onSend = async () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
+    if (!trimmed || loading) return;
 
     pushMessage("user", trimmed);
-    const reply = assistantReply(language, trimmed);
-    pushMessage("assistant", reply.text);
-    setShowReservationForm(Boolean(reply.showReservationForm));
     setInput("");
+    setLoading(true);
+
+    try {
+      const conversation = messages.map((m) => `${m.role}: ${m.text}`).join("\n") + `\nuser: ${trimmed}`;
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/interact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demo_id: "cafe", user_input: conversation }),
+      });
+      const data = await res.json();
+      pushMessage("assistant", data.response_content || "...");
+
+      const intent = detectIntent(trimmed);
+      if (intent === "reservation") setShowReservationForm(true);
+    } catch (e) {
+      pushMessage("assistant", "Sorry, I am having trouble connecting to the server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onQuickAction = (intent: Exclude<Intent, "other">) => {
+  const onQuickAction = async (intent: Exclude<Intent, "other">) => {
+    if (loading) return;
     const map = {
       reservation: t.quickActions.reservation,
       menu: t.quickActions.menu,
@@ -369,11 +387,26 @@ export default function RestaurantCafeChatbotDemo() {
       events: t.quickActions.events,
       delivery: t.quickActions.delivery,
     };
+    
+    const text = map[intent];
+    pushMessage("user", text);
+    setLoading(true);
 
-    pushMessage("user", map[intent]);
-    const reply = assistantReply(language, map[intent]);
-    pushMessage("assistant", reply.text);
-    setShowReservationForm(Boolean(reply.showReservationForm));
+    try {
+      const conversation = messages.map((m) => `${m.role}: ${m.text}`).join("\n") + `\nuser: ${text}`;
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/interact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demo_id: "cafe", user_input: conversation }),
+      });
+      const data = await res.json();
+      pushMessage("assistant", data.response_content || "...");
+      if (intent === "reservation") setShowReservationForm(true);
+    } catch (e) {
+      pushMessage("assistant", "Sorry, I am having trouble connecting to the server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitReservation = () => {
@@ -560,6 +593,13 @@ export default function RestaurantCafeChatbotDemo() {
                     </div>
                   ))}
                 </div>
+                {loading && (
+                  <div className="flex justify-start mt-4">
+                    <div className="rounded-2xl border border-orange-100 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+                      {t.brand} is typing...
+                    </div>
+                  </div>
+                )}
               </ScrollArea>
 
               {showReservationForm && (
@@ -616,6 +656,7 @@ export default function RestaurantCafeChatbotDemo() {
                 </div>
                 <div className="flex gap-3">
                   <Input
+                    disabled={loading}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder={t.placeholder}
@@ -623,7 +664,7 @@ export default function RestaurantCafeChatbotDemo() {
                       if (e.key === "Enter") onSend();
                     }}
                   />
-                  <Button className="rounded-2xl px-6" onClick={onSend}>
+                  <Button disabled={loading} className="rounded-2xl px-6" onClick={onSend}>
                     {t.send}
                   </Button>
                 </div>

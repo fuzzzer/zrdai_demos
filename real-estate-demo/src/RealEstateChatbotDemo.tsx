@@ -456,14 +456,15 @@ export default function RealEstateChatbotDemo() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3001/api/chat", {
+      const conversation = history.map((m) => `${m.role}: ${m.text}`).join("\n") + `\nuser: ${trimmed}`;
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/interact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: trimmed,
-          history,
+          demo_id: "real-estate",
+          user_input: conversation,
         }),
       });
 
@@ -475,7 +476,7 @@ export default function RealEstateChatbotDemo() {
 
       pushMessage(
         "assistant",
-        data.reply || "უკაცრავად, პასუხის მიღება ვერ მოხერხდა."
+        data.response_content || "უკაცრავად, პასუხის მიღება ვერ მოხერხდა."
       );
     } catch (error) {
       console.error(error);

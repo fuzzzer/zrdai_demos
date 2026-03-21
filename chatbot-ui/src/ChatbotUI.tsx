@@ -46,13 +46,15 @@ export default function ChatbotUI() {
     scrollToBottom();
 
     try {
-      const response = await fetch("http://localhost:3001/api/chat", {
+      const conversation = updatedMessages.map((m) => `${m.role === "user" ? "მომხმარებელი" : "ასისტენტი"}: ${m.text}`).join("\n");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/interact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: updatedMessages,
+          demo_id: "dental",
+          user_input: conversation,
         }),
       });
 
@@ -66,7 +68,7 @@ export default function ChatbotUI() {
         ...prev,
         {
           role: "assistant",
-          text: data.reply ?? "ბოდიში, ამ ეტაპზე პასუხი ვერ დავაბრუნე.",
+          text: data.response_content ?? "ბოდიში, ამ ეტაპზე პასუხი ვერ დავაბრუნე.",
         },
       ]);
     } catch (error) {
