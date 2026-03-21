@@ -1,0 +1,238 @@
+import { useMemo, useRef, useState } from "react";
+
+type Message = {
+  role: "user" | "assistant";
+  text: string;
+};
+
+const quickQuestions = [
+  "კლინიკის სამუშაო საათები",
+  "ფასები და კონსულტაცია",
+  "ჩაწერა ვიზიტზე",
+  "კბილის ტკივილი მაქვს",
+];
+
+export default function ChatbotUI() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      text:
+        "გამარჯობა 👋 მე ვარ DentalCare-ის ვირტუალური ასისტენტი. შემიძლია დაგეხმარო ჩაწერაში, ფასებში, სამუშაო საათებში და ზოგად ინფორმაციაში. როგორ დაგეხმარო?",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
+
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      listRef.current?.scrollTo({
+        top: listRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 50);
+  };
+
+  const sendMessage = async (textOverride?: string) => {
+    const text = (textOverride ?? input).trim();
+    if (!text || loading) return;
+
+    const updatedMessages: Message[] = [...messages, { role: "user", text }];
+    setMessages(updatedMessages);
+    setInput("");
+    setLoading(true);
+    scrollToBottom();
+
+    try {
+      const response = await fetch("http://localhost:3001/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: updatedMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("სერვერთან დაკავშირება ვერ მოხერხდა");
+      }
+
+      const data = await response.json();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: data.reply ?? "ბოდიში, ამ ეტაპზე პასუხი ვერ დავაბრუნე.",
+        },
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text:
+            "ბოდიში, ახლა ტექნიკური შეფერხებაა. შეამოწმე backend მუშაობს თუ არა და API key სწორად გაქვს თუ არა დამატებული.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+      scrollToBottom();
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-sky-100 p-4 text-slate-800 md:p-8">
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[320px_1fr]">
+        <aside className="rounded-[28px] border border-sky-100 bg-white p-5 shadow-xl">
+          <div className="flex items-center gap-3 border-b border-sky-100 pb-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-sky-600 text-2xl text-white shadow-md">
+              🦷
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-sky-900">DentalCare</h1>
+              <p className="text-sm text-slate-500">სტომატოლოგიური კლინიკა</p>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-3xl bg-sky-50 p-4">
+            <h2 className="text-sm font-semibold text-sky-900">რას აკეთებს ბოტი</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              პასუხობს ხშირად დასმულ კითხვებს, გეხმარება ჩაწერაში, გაძლევს
+              ინფორმაციას მომსახურებებსა და სამუშაო საათებზე.
+            </p>
+          </div>
+
+          <div className="mt-5">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              სწრაფი კითხვები
+            </p>
+            <div className="space-y-2">
+              {quickQuestions.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => sendMessage(item)}
+                  disabled={loading}
+                  className="w-full rounded-2xl border border-sky-100 bg-white px-4 py-3 text-left text-sm font-medium text-sky-900 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-3xl bg-gradient-to-r from-cyan-500 to-sky-600 p-4 text-white shadow-md">
+            <p className="text-sm font-semibold">სამუშაო საათები</p>
+            <p className="mt-2 text-sm leading-6 text-cyan-50">
+              ორშაბათი - შაბათი
+              <br />
+              10:00 - 19:00
+            </p>
+          </div>
+        </aside>
+
+        <main className="overflow-hidden rounded-[28px] border border-sky-100 bg-white shadow-xl">
+          <header className="flex flex-col gap-4 border-b border-sky-100 bg-gradient-to-r from-cyan-500 to-sky-600 px-5 py-5 text-white md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">DentalCare ასისტენტი</h2>
+              <p className="mt-1 text-sm text-cyan-50">
+                დაგეხმარები ჩაწერაში, მომსახურებებში და ზოგად ინფორმაციაში
+              </p>
+            </div>
+
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+              ონლაინ
+            </div>
+          </header>
+
+          <section className="flex h-[78vh] flex-col">
+            <div
+              ref={listRef}
+              className="flex-1 space-y-4 overflow-y-auto bg-sky-50/40 px-4 py-5 md:px-6"
+            >
+              {messages.map((message, index) => {
+                const isUser = message.role === "user";
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[88%] rounded-[24px] px-4 py-3 shadow-sm md:max-w-[72%] ${
+                        isUser
+                          ? "bg-sky-600 text-white"
+                          : "border border-sky-100 bg-white text-slate-700"
+                      }`}
+                    >
+                      <div className="mb-1 text-xs font-medium opacity-70">
+                        {isUser ? "თქვენ" : "DentalCare ასისტენტი"}
+                      </div>
+                      <p className="whitespace-pre-wrap text-sm leading-6">
+                        {message.text}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="rounded-[24px] border border-sky-100 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+                    პასუხს ვამზადებ...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-sky-100 bg-white px-4 py-4 md:px-6">
+              <div className="mb-3 flex flex-wrap gap-2">
+                {[
+                  "კბილების გათეთრება",
+                  "ბრეკეტები",
+                  "იმპლანტი",
+                  "ბავშვთა სტომატოლოგია",
+                ].map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => sendMessage(chip)}
+                    disabled={loading}
+                    className="rounded-full bg-sky-100 px-3 py-1.5 text-xs font-medium text-sky-800 transition hover:bg-sky-200 disabled:opacity-60"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSubmit} className="flex items-end gap-3">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="დაწერე შეტყობინება..."
+                  rows={2}
+                  className="min-h-[56px] flex-1 resize-none rounded-3xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-400"
+                />
+                <button
+                  type="submit"
+                  disabled={!canSend}
+                  className="rounded-3xl bg-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  გაგზავნა
+                </button>
+              </form>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  );
+}
