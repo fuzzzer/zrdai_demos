@@ -667,14 +667,15 @@ export default function RealEstateChatbotDemo() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3001/api/chat", {
+      const conversation = history.map((m) => `${m.role}: ${m.text}`).join("\n") + `\nuser: ${trimmed}`;
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/interact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: trimmed,
-          history,
+          demo_id: "real-estate",
+          user_input: conversation,
         }),
       });
 
@@ -686,7 +687,7 @@ export default function RealEstateChatbotDemo() {
 
       pushMessage(
         "assistant",
-        data.reply || "უკაცრავად, პასუხის მიღება ვერ მოხერხდა."
+        data.response_content || "უკაცრავად, პასუხის მიღება ვერ მოხერხდა."
       );
     } catch (error) {
       console.error(error);
@@ -1101,118 +1102,6 @@ export default function RealEstateChatbotDemo() {
 """
 
 """
------Content from: server/prompt.ts-----
-
-export const REAL_ESTATE_SYSTEM_PROMPT = `
-You are Skyline Residence's multilingual AI sales assistant for a premium residential real estate development in Georgia.
-
-Language rules:
-- Default to Georgian.
-- If the user writes in English, reply in English.
-- If the user writes in Russian, reply in Russian.
-- Continue in the user's language.
-
-Your job:
-- Answer naturally and professionally like a real estate sales consultant.
-- Help with apartment types, pricing logic, payment plans, amenities, project location, investment questions, and viewing requests.
-- Collect serious lead information naturally when appropriate.
-
-Project context:
-- Project name: Skyline Residence
-- Location: Tbilisi, Georgia
-- Property type: Premium residential development
-- Unit types: Studio, 1BR, 2BR, 3BR
-- Amenities: Parking, security, green courtyard, gym, concierge, children's area
-- Payment terms: Full payment and installment plans available
-- Construction status: Active development
-- Viewings: Available by request
-
-Rules:
-- Do not invent exact inventory numbers.
-- Do not invent exact prices if not provided.
-- Say that pricing depends on unit type, floor, view, and current availability.
-- If user is interested in pricing, availability, or booking a viewing, ask for:
-  full name, phone/email, preferred unit type, budget range, and preferred viewing date.
-- Be concise, polished, warm, and sales-oriented.
-`;
-"""
-
-"""
------Content from: server/index.ts-----
-
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import OpenAI from "openai";
-import { REAL_ESTATE_SYSTEM_PROMPT } from "./prompt";
-
-dotenv.config();
-
-const app = express();
-const port = Number(process.env.PORT || 3001);
-
-app.use(cors());
-app.use(express.json());
-
-if (!process.env.OPENAI_API_KEY) {
-  console.error("Missing OPENAI_API_KEY in .env");
-}
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
-});
-
-app.post("/api/chat", async (req, res) => {
-  try {
-    const { message, history = [] } = req.body as {
-      message?: string;
-      history?: { role: "user" | "assistant"; text: string }[];
-    };
-
-    if (!message?.trim()) {
-      return res.status(400).json({ error: "Message is required." });
-    }
-
-    const response = await client.responses.create({
-      model: "gpt-5.4",
-      input: [
-        {
-          role: "system",
-          content: REAL_ESTATE_SYSTEM_PROMPT,
-        },
-        ...history.map((item) => ({
-          role: item.role,
-          content: item.text,
-        })),
-        {
-          role: "user",
-          content: message,
-        },
-      ],
-    });
-
-    res.json({
-      reply: response.output_text || "უკაცრავად, პასუხი ვერ დამუშავდა.",
-    });
-  } catch (error) {
-    console.error("Chat API error:", error);
-    res.status(500).json({
-      error: "Failed to generate response.",
-      details: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-});
-
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
-"""
-
-"""
 -----Content from: package.json-----
 
 {
@@ -1222,20 +1111,15 @@ app.listen(port, () => {
   "type": "module",
   "scripts": {
     "dev": "vite",
-  "server": "tsx server/index.ts",
-  "build": "tsc -b && vite build",
-  "preview": "vite preview"
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
-    "openai": "^6.32.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwind-merge": "^3.5.0",
@@ -1251,13 +1135,11 @@ app.listen(port, () => {
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
-    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
     "vite": "^8.0.1"
   }
 }
-
 """
 
 """
@@ -1275,12 +1157,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: '/real-estate-demo/',
+  build: {
+    outDir: '../dist/real-estate-demo',
+    emptyOutDir: true
+  }
 });
 """
 
 """
 -----Content from: .env-----
 
-OPENAI_API_KEY=xxx
+VITE_API_URL=https://zrdai.work/api/v1
 """
 

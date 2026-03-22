@@ -10,4 +10,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: '/real-estate-demo/',
+  build: {
+    outDir: '../dist/real-estate-demo',
+    emptyOutDir: true
+  }
 });

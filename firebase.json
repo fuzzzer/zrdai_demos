@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/cafe/**",
+        "destination": "/cafe/index.html"
+      },
+      {
+        "source": "/chatbot-ui/**",
+        "destination": "/chatbot-ui/index.html"
+      },
+      {
+        "source": "/real-estate-demo/**",
+        "destination": "/real-estate-demo/index.html"
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "/cafe",
+        "type": 301
+      }
+    ]
+  }
+}

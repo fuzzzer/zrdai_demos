@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,19 +71,6 @@ const content = {
       phoneValue: "+995 555 12 34 56",
     },
     replies: {
-      menu:
-        "Our menu includes breakfast plates, fresh salads, pasta, grilled dishes, desserts, coffee, and signature drinks. I can also tell you about vegetarian, vegan, or gluten-friendly options.",
-      vegan:
-        "Yes, we offer vegan-friendly dishes, including fresh salads, grilled vegetables, pasta options, and plant-based desserts.",
-      hours: "We are open every day from 10:00 AM to 11:00 PM.",
-      events:
-        "We can assist with birthday dinners, business lunches, and small private events. Please share your preferred date, guest count, and event type.",
-      delivery:
-        "Yes, we offer takeaway and selected delivery options. Typical preparation time is around 20–35 minutes depending on the order.",
-      fallback:
-        "I’d be happy to help. You can ask about reservations, menu options, opening hours, private events, or takeaway and delivery.",
-      askReservation:
-        "Great — please share your preferred date, time, number of guests, your full name, and a phone number or email for confirmation.",
       reservationSummaryTitle: "Thanks! Here is your reservation request summary:",
       reservationSubmitted:
         "Your request has been noted, and the restaurant team will confirm it shortly.",
@@ -136,19 +123,6 @@ const content = {
       phoneValue: "+995 555 12 34 56",
     },
     replies: {
-      menu:
-        "В нашем меню есть завтраки, свежие салаты, паста, блюда на гриле, десерты, кофе и фирменные напитки. Я также могу подсказать вегетарианские, веганские и безглютеновые варианты.",
-      vegan:
-        "Да, у нас есть веганские блюда: свежие салаты, овощи на гриле, некоторые варианты пасты и десерты на растительной основе.",
-      hours: "Мы открыты каждый день с 10:00 до 23:00.",
-      events:
-        "Мы помогаем с днями рождения, бизнес-ланчами и небольшими частными мероприятиями. Пожалуйста, укажите желаемую дату, количество гостей и тип события.",
-      delivery:
-        "Да, у нас есть самовывоз и некоторые варианты доставки. Обычно приготовление занимает около 20–35 минут в зависимости от заказа.",
-      fallback:
-        "С удовольствием помогу. Вы можете спросить о бронировании, меню, часах работы, частных мероприятиях, самовывозе или доставке.",
-      askReservation:
-        "Отлично — пожалуйста, укажите желаемую дату, время, количество гостей, ваше полное имя и номер телефона или email для подтверждения.",
       reservationSummaryTitle:
         "Спасибо! Вот краткая информация по вашему запросу на бронирование:",
       reservationSubmitted:
@@ -202,19 +176,6 @@ const content = {
       phoneValue: "+995 555 12 34 56",
     },
     replies: {
-      menu:
-        "ჩვენს მენიუშია საუზმის კერძები, სალათები, პასტა, გრილზე მომზადებული კერძები, დესერტები, ყავა და საფირმო სასმელები. სურვილის შემთხვევაში ვეგეტარიანულ, ვეგანურ და გლუტენისგან თავისუფალ ვარიანტებზეც გეტყვით.",
-      vegan:
-        "დიახ, გვაქვს ვეგანური არჩევანი, მათ შორის ახალი სალათები, გრილზე მომზადებული ბოსტნეული, გარკვეული პასტები და მცენარეულ საფუძველზე მომზადებული დესერტები.",
-      hours: "ვმუშაობთ ყოველდღე 10:00-დან 23:00-მდე.",
-      events:
-        "გეხმარებით დაბადების დღის ვახშმის, საქმიანი ლანჩისა და მცირე კერძო ღონისძიებების ორგანიზებაში. გთხოვთ მოგვწეროთ სასურველი თარიღი, სტუმრების რაოდენობა და ღონისძიების ტიპი.",
-      delivery:
-        "დიახ, გვაქვს როგორც წაღება, ასევე გარკვეული მიტანის სერვისი. შეკვეთის მომზადებას ჩვეულებრივ 20–35 წუთი სჭირდება.",
-      fallback:
-        "სიამოვნებით დაგეხმარებით. შეგიძლიათ გვკითხოთ ჯავშნის, მენიუს, სამუშაო საათების, კერძო ღონისძიებების, მიტანისა და წაღების შესახებ.",
-      askReservation:
-        "შესანიშნავია — გთხოვთ მოგვწეროთ სასურველი თარიღი, დრო, სტუმრების რაოდენობა, თქვენი სრული სახელი და ტელეფონის ნომერი ან ელფოსტა დასადასტურებლად.",
       reservationSummaryTitle: "გმადლობთ! თქვენი ჯავშნის მოთხოვნის შეჯამება:",
       reservationSubmitted:
         "თქვენი მოთხოვნა მიღებულია და რესტორნის გუნდი მალე დაგიკავშირდებათ დასადასტურებლად.",
@@ -270,31 +231,6 @@ function detectIntent(input: string): Intent {
   if (/event|birthday|private|мероприят|событ|ივენთ|ღონისძიებ/.test(text)) return "events";
   if (/delivery|takeaway|pickup|самовывоз|доставк|მიტან|წაღებ/.test(text)) return "delivery";
   return "other";
-}
-
-function assistantReply(
-  lang: Language,
-  input: string
-): { text: string; showReservationForm?: boolean } {
-  const intent = detectIntent(input);
-  const t = content[lang].replies;
-
-  switch (intent) {
-    case "reservation":
-      return { text: t.askReservation, showReservationForm: true };
-    case "menu":
-      return { text: t.menu };
-    case "vegan":
-      return { text: t.vegan };
-    case "hours":
-      return { text: t.hours };
-    case "events":
-      return { text: t.events };
-    case "delivery":
-      return { text: t.delivery };
-    default:
-      return { text: t.fallback };
-  }
 }
 
 export default function RestaurantCafeChatbotDemo() {
