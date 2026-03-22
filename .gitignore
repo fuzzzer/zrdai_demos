@@ -79,3 +79,4 @@ Thumbs.db
 # Ignore general log files.
 *.log
 *.log.*
+.firebase/
